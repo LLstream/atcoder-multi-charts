@@ -1,95 +1,67 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client'; // フロントエンド用のコンポーネントを指定
 
-export default function Home() {
+import { useState } from 'react';
+
+
+export default function FetchUserData() {
+  const [username, setUsername] = useState<string>(''); // ユーザー名の状態
+  const [data, setData] = useState<string | null>(null); // 取得したデータ
+  const [dataList, setDataList] = useState<string[]>([]); // 取得したデータのリスト
+  const [error, setError] = useState<string | null>(null); // エラーメッセージ
+
+  const fetchData = async () => {
+    if (!username) {
+      setError('ユーザー名を入力してください。');
+      return;
+    }
+
+    try {
+      // API Routesを通じて外部APIデータを取得
+      const res = await fetch(`/api/users/${username}`); // ユーザー名をURLに含めてリクエスト
+      if (!res.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      const result: string = await res.json(); // 型定義を使用してデータを取得
+      setData(result); // 取得したデータをstateに保存
+      if (dataList.length > 0) {
+        setDataList((prevDataList) => [...prevDataList, result]);
+      } else {
+        setDataList([result]);
+      }
+      setError(null); // エラーをクリア
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message); // エラーメッセージを設定
+      } else {
+        setError('An unexpected error occurred');
+      }
+    }
+  };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+    <div>
+      <input
+        type="text"
+        placeholder="ユーザー名を入力"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)} // 入力値を更新
+      />
+      <button onClick={fetchData}>データを取得</button>
+      {error && <p>Error: {error}</p>}
+      {/* {data && (
+        <div>
+          <h1>取得したユーザーデータ:</h1>
+          <pre>{JSON.stringify(data, null, 2)}</pre>
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )} */}
+      {dataList.length > 0 && (
+        <div>
+          <h1>取得したユーザーデータ:</h1>
+          {dataList.map((data, index) => (
+            <pre key={index}>{JSON.stringify(data, null, 2)}</pre>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
