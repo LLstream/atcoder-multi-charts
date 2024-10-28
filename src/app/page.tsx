@@ -172,6 +172,22 @@ export default function FetchUserData() {
           />
         </div>
       )}
+      {Object.keys(userDatas).length > 0 && (
+        <div>
+          <h2>New Rating over Time</h2>
+          <Line
+            data={chartData}
+            options={{
+              scales: {
+                y: {
+                  beginAtZero: true,
+                },
+              },
+              spanGaps: true, // データがない部分を線でつなげないようにする
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
