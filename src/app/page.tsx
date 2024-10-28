@@ -2,7 +2,7 @@
 import { Line } from 'react-chartjs-2';
 import 'chart.js/auto';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ContestData {
   IsRated: boolean;
@@ -20,7 +20,7 @@ interface ContestData {
 // データセットの型定義を更新
 type DatasetType = {
   label: string;
-  data: (number | null)[]; // 型を (number | null)[] に変更
+  data: (number | null)[];
   fill: boolean;
   borderColor: string;
   tension: number;
@@ -30,6 +30,7 @@ export default function FetchUserData() {
   const [usernames, setUsernames] = useState<string[]>(['']); // ユーザー名の配列状態
   const [userDatas, setUserDatas] = useState<{ [key: string]: ContestData[] }>({}); // ユーザーごとのデータ
   const [error, setError] = useState<string | null>(null); // エラーメッセージ
+  const [isLoading, setIsLoading] = useState<boolean>(false); // ローディング状態
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const newUsernames = [...usernames];
@@ -49,26 +50,44 @@ export default function FetchUserData() {
       return;
     }
 
-    const newUserDatas: { [key: string]: ContestData[] } = {};
+    setIsLoading(true); // ローディング開始
+    setError(null); // エラーをクリア
+    setUserDatas({}); // 古いデータをクリア
 
     try {
-      for (const user of validUsernames) {
-        // API Routesを通じて外部APIデータを取得
-        const res = await fetch(`/api/users/${user}`);
-        if (!res.ok) {
-          throw new Error(`Failed to fetch data for user: ${user}`);
-        }
-        const result: ContestData[] = await res.json(); // 配列としてデータを取得
-        newUserDatas[user] = result; // ユーザーごとのデータを保存
-      }
-      setUserDatas(newUserDatas); // 全ユーザーのデータをstateに保存
-      setError(null); // エラーをクリア
+      // ユーザーごとのデータを並行して取得
+      const results = await Promise.all(
+        validUsernames.map(async (user) => {
+          // キャッシュを無効化するためにタイムスタンプをクエリパラメータに追加
+          const timestamp = Date.now();
+          const res = await fetch(`/api/users/${user}?t=${timestamp}`, {
+            method: 'GET',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+            },
+            cache: 'no-store', // キャッシュを無効化
+          });
+          if (!res.ok) {
+            throw new Error(`Failed to fetch data for user: ${user}`);
+          }
+          const result: ContestData[] = await res.json();
+          console.log(`Fetched data for ${user}:`, result); // デバッグ用ログ
+          return [user, result] as [string, ContestData[]];
+        })
+      );
+      const newUserDatas = Object.fromEntries(results);
+      setUserDatas(newUserDatas);
+      console.log('Updated userDatas:', newUserDatas); // デバッグ用ログ
     } catch (err) {
       if (err instanceof Error) {
-        setError(err.message); // エラーメッセージを設定
+        setError(err.message);
       } else {
         setError('An unexpected error occurred');
       }
+    } finally {
+      setIsLoading(false); // ローディング終了
     }
   };
 
@@ -114,6 +133,10 @@ export default function FetchUserData() {
     datasets: datasets,
   };
 
+  useEffect(() => {
+    console.log('userDatas has been updated:', userDatas); // デバッグ用ログ
+  }, [userDatas]);
+
   return (
     <div>
       <h3>ユーザー名を入力してください：</h3>
@@ -127,7 +150,10 @@ export default function FetchUserData() {
           style={{ display: 'block', marginBottom: '8px' }}
         />
       ))}
-      <button onClick={fetchData}>データを取得</button>
+      <button onClick={fetchData} disabled={isLoading}>
+        データを取得
+      </button>
+      {isLoading && <p>データを取得中...</p>}
       {error && <p>Error: {error}</p>}
       {/* グラフを表示 */}
       {Object.keys(userDatas).length > 0 && (
