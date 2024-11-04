@@ -93,7 +93,7 @@ export default function FetchUserData() {
 
   // 全てのユーザーの"IsRated"がtrueのデータのみを収集
   const allDatesSet = new Set<string>();
-  const datasets: DatasetType[] = Object.entries(userDatas).map(([user, dataList], index) => {
+  const Ratingdatasets: DatasetType[] = Object.entries(userDatas).map(([user, dataList], index) => {
     const ratedData = dataList.filter((item) => item.IsRated);
     // "EndTime"でデータをソート
     ratedData.sort(
@@ -113,14 +113,14 @@ export default function FetchUserData() {
     };
   });
 
-  const labels = Array.from(allDatesSet).sort(
+  const Ratinglabels = Array.from(allDatesSet).sort(
     (a, b) => new Date(a).getTime() - new Date(b).getTime()
   );
 
   // 各データセットのデータをラベルに合わせる
-  datasets.forEach((dataset) => {
+  Ratingdatasets.forEach((dataset) => {
     const userData = userDatas[dataset.label]?.filter((item) => item.IsRated);
-    dataset.data = labels.map((label) => {
+    dataset.data = Ratinglabels.map((label) => {
       const dataItem = userData?.find(
         (item) => new Date(item.EndTime).toLocaleDateString() === label
       );
@@ -128,9 +128,49 @@ export default function FetchUserData() {
     });
   });
 
-  const chartData = {
-    labels: labels,
-    datasets: datasets,
+  const RatingChartData = {
+    labels: Ratinglabels,
+    datasets: Ratingdatasets,
+  };
+
+  const Performancedatasets: DatasetType[] = Object.entries(userDatas).map(([user, dataList], index) => {
+    const ratedData = dataList.filter((item) => item.IsRated);
+    // "EndTime"でデータをソート
+    ratedData.sort(
+      (a, b) => new Date(a.EndTime).getTime() - new Date(b.EndTime).getTime()
+    );
+    // ラベル用の日付を収集
+    ratedData.forEach((item) => {
+      allDatesSet.add(new Date(item.EndTime).toLocaleDateString());
+    });
+    // ユーザーごとのパフォーマンスデータを準備
+    return {
+      label: user,
+      data: ratedData.map((item) => item.Performance),
+      fill: false,
+      borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`, // 色相を変えて色を設定
+      tension: 0.1,
+    };
+  });
+
+  const Performancelabels = Array.from(allDatesSet).sort(
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
+  );
+
+  // 各データセットのデータをラベルに合わせる
+  Performancedatasets.forEach((dataset) => {
+    const userData = userDatas[dataset.label]?.filter((item) => item.IsRated);
+    dataset.data = Performancelabels.map((label) => {
+      const dataItem = userData?.find(
+        (item) => new Date(item.EndTime).toLocaleDateString() === label
+      );
+      return dataItem ? dataItem.Performance : null;
+    });
+  });
+
+  const PerformanceChartData = {
+    labels: Performancelabels,
+    datasets: Performancedatasets,
   };
 
   useEffect(() => {
@@ -160,7 +200,19 @@ export default function FetchUserData() {
         <div>
           <h2>New Rating over Time</h2>
           <Line
-            data={chartData}
+            data={RatingChartData}
+            options={{
+              scales: {
+                y: {
+                  beginAtZero: true,
+                },
+              },
+              spanGaps: true, // データがない部分を線でつなげないようにする
+            }}
+          />
+          <h2>Performance over Time</h2>
+          <Line
+            data={PerformanceChartData}
             options={{
               scales: {
                 y: {
