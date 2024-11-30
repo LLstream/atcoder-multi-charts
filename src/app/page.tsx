@@ -15,6 +15,7 @@ interface ContestData {
   ContestName: string;
   ContestNameEn: string;
   EndTime: string;
+  Result: string;
 }
 
 // データセットの型定義を更新
@@ -137,6 +138,53 @@ export default function FetchUserData() {
     console.log('userDatas has been updated:', userDatas); // デバッグ用ログ
   }, [userDatas]);
 
+
+  // ----AtCoder Problemsのデータを取得する関数---
+  const fetchUserData = async (username: string) => {
+    setIsLoading(true); // ローディング開始
+    setError(null); // エラーをクリア
+    try {
+      const response = await fetch(`https://kenkoooo.com/atcoder/atcoder-api/results?user=${username}`);
+      if(!response.ok) {
+        throw new Error(`Failed to fetch data for user: ${username}`);
+      }
+      const data: ContestData[] = await response.json();
+      setUserDatas((prevData) => ({ ...prevData, [username]: data }));
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsLoading(false); // ローディング終了
+    }
+  };
+
+  const handleFetchData = () => {
+    usernames.forEach((username) => {
+      if(username) {
+        fetchUserData(username);
+      }
+    });
+  };
+
+  // 参加コンテスト数を取得
+  const calculateContestCount = (data: ContestData[]) => {
+    return data.length;
+  };
+
+  // 最高レーティングを取得
+  const calculateMaxRating = (data: ContestData[]) => {
+    return Math.max(...data.map((item) => item.NewRating));
+  };
+
+  // 最新のレーティングを取得
+  const calculateLatestRating = (data: ContestData[]) => {
+    return data[data.length - 1].NewRating;
+  };
+  
+  // 直近のレーティング変化
+  const calculateLatestRatingChange = (data: ContestData[]) => {
+    return data[data.length - 1].NewRating - data[data.length - 2].NewRating;
+  };
+
   return (
     <div>
       <h3>ユーザー名を入力してください：</h3>
@@ -172,6 +220,19 @@ export default function FetchUserData() {
           />
         </div>
       )}
+      {/* AtCoder Problemsのデータを表示 */}
+      <div style={{ display: 'flex', flexWrap: 'wrap'}}>
+      {Object.entries(userDatas).map(([username, data]) => (
+        <div key={username} style={{ margin: '1rem'}}>
+          <h3> {username}のコンテストデータ</h3>
+          <p> 参加コンテスト数(Rated, UnRated):{calculateContestCount(data)}</p>
+          <p> 最高レーティング: {calculateMaxRating(data)}</p>
+          <p> 最新のレーティング:{calculateLatestRating(data)}</p>
+          <p> 直近のレーティング変化:{calculateLatestRatingChange(data)}</p>
+          <br />
+        </div>  
+      ))}
+      </div>
     </div>
   );
 }
