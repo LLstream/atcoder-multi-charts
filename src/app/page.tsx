@@ -44,8 +44,10 @@ export default function FetchUserData() {
     }
   };
 
-  const fetchData = async () => {
-    const validUsernames = usernames.filter((name) => name.trim() !== '');
+  // fetchData関数を修正して、オプションでユーザー名の配列を引数として受け取る
+  const fetchData = async (usernamesParam?: string[]) => {
+    const usernamesToUse = usernamesParam || usernames;
+    const validUsernames = usernamesToUse.filter((name) => name.trim() !== '');
     if (validUsernames.length === 0) {
       setError('ユーザー名を入力してください。');
       return;
@@ -217,10 +219,27 @@ export default function FetchUserData() {
           placeholder={`ユーザー名を入力`}
           value={name}
           onChange={(e) => handleUsernameChange(e, index)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              const inputValue = (e.target as HTMLInputElement).value;
+              const newUsernames = [...usernames];
+              newUsernames[index] = inputValue;
+
+              // 最後の入力ボックスが空でなければ新しいボックスを追加
+              if (index === usernames.length - 1 && inputValue.trim() !== '') {
+                newUsernames.push('');
+              }
+
+              setUsernames(newUsernames);
+              fetchData(newUsernames);
+            }
+          }}
           style={{ display: 'block', marginBottom: '8px' }}
         />
       ))}
-      <button onClick={fetchData} disabled={isLoading}>
+      {/* ここを修正 */}
+      <button onClick={() => fetchData()} disabled={isLoading}>
         データを取得
       </button>
       {isLoading && <p>データを取得中...</p>}
