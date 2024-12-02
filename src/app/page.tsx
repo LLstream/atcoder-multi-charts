@@ -65,8 +65,8 @@ export default function FetchUserData() {
             method: 'GET',
             headers: {
               'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache',
-              'Expires': '0',
+              Pragma: 'no-cache',
+              Expires: '0',
             },
             cache: 'no-store', // キャッシュを無効化
           });
@@ -94,34 +94,36 @@ export default function FetchUserData() {
 
   // 全てのユーザーの"IsRated"がtrueのデータのみを収集
   const allDatesSet = new Set<string>();
-  const Ratingdatasets: DatasetType[] = Object.entries(userDatas).map(([user, dataList], index) => {
-    const ratedData = dataList.filter((item) => item.IsRated);
-    // "EndTime"でデータをソート
-    ratedData.sort(
-      (a, b) => new Date(a.EndTime).getTime() - new Date(b.EndTime).getTime()
-    );
-    // ラベル用の日付を収集
-    ratedData.forEach((item) => {
-      allDatesSet.add(new Date(item.EndTime).toLocaleDateString());
+  const datasets: DatasetType[] = Object.entries(userDatas)
+    .filter(([user, dataList]) => dataList.length > 0) // 有効なデータのみ使用
+    .map(([user, dataList], index) => {
+      const ratedData = dataList.filter((item) => item.IsRated);
+      // "EndTime"でデータをソート
+      ratedData.sort(
+        (a, b) => new Date(a.EndTime).getTime() - new Date(b.EndTime).getTime()
+      );
+      // ラベル用の日付を収集
+      ratedData.forEach((item) => {
+        allDatesSet.add(new Date(item.EndTime).toLocaleDateString());
+      });
+      // ユーザーごとのレーティングデータを準備
+      return {
+        label: user,
+        data: ratedData.map((item) => item.NewRating),
+        fill: false,
+        borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`, // 色相を変えて色を設定
+        tension: 0.1,
+      };
     });
-    // ユーザーごとのレーティングデータを準備
-    return {
-      label: user,
-      data: ratedData.map((item) => item.NewRating),
-      fill: false,
-      borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`, // 色相を変えて色を設定
-      tension: 0.1,
-    };
-  });
 
-  const Ratinglabels = Array.from(allDatesSet).sort(
+  const labels = Array.from(allDatesSet).sort(
     (a, b) => new Date(a).getTime() - new Date(b).getTime()
   );
 
   // 各データセットのデータをラベルに合わせる
-  Ratingdatasets.forEach((dataset) => {
+  datasets.forEach((dataset) => {
     const userData = userDatas[dataset.label]?.filter((item) => item.IsRated);
-    dataset.data = Ratinglabels.map((label) => {
+    dataset.data = labels.map((label) => {
       const dataItem = userData?.find(
         (item) => new Date(item.EndTime).toLocaleDateString() === label
       );
@@ -129,68 +131,29 @@ export default function FetchUserData() {
     });
   });
 
-  const RatingChartData = {
-    labels: Ratinglabels,
-    datasets: Ratingdatasets,
-  };
-
-  const Performancedatasets: DatasetType[] = Object.entries(userDatas).map(([user, dataList], index) => {
-    const ratedData = dataList.filter((item) => item.IsRated);
-    // "EndTime"でデータをソート
-    ratedData.sort(
-      (a, b) => new Date(a.EndTime).getTime() - new Date(b.EndTime).getTime()
-    );
-    // ラベル用の日付を収集
-    ratedData.forEach((item) => {
-      allDatesSet.add(new Date(item.EndTime).toLocaleDateString());
-    });
-    // ユーザーごとのパフォーマンスデータを準備
-    return {
-      label: user,
-      data: ratedData.map((item) => item.Performance),
-      fill: false,
-      borderColor: `hsl(${(index * 60) % 360}, 70%, 50%)`, // 色相を変えて色を設定
-      tension: 0.1,
-    };
-  });
-
-  const Performancelabels = Array.from(allDatesSet).sort(
-    (a, b) => new Date(a).getTime() - new Date(b).getTime()
-  );
-
-  // 各データセットのデータをラベルに合わせる
-  Performancedatasets.forEach((dataset) => {
-    const userData = userDatas[dataset.label]?.filter((item) => item.IsRated);
-    dataset.data = Performancelabels.map((label) => {
-      const dataItem = userData?.find(
-        (item) => new Date(item.EndTime).toLocaleDateString() === label
-      );
-      return dataItem ? dataItem.Performance : null;
-    });
-  });
-
-  const PerformanceChartData = {
-    labels: Performancelabels,
-    datasets: Performancedatasets,
+  const chartData = {
+    labels: labels,
+    datasets: datasets,
   };
 
   useEffect(() => {
     console.log('userDatas has been updated:', userDatas); // デバッグ用ログ
   }, [userDatas]);
 
-
   // ----AtCoder Problemsのデータを取得する関数---
   const fetchUserData = async (username: string) => {
     setIsLoading(true); // ローディング開始
     setError(null); // エラーをクリア
     try {
-      const response = await fetch(`https://kenkoooo.com/atcoder/atcoder-api/results?user=${username}`);
-      if(!response.ok) {
+      const response = await fetch(
+        `https://kenkoooo.com/atcoder/atcoder-api/results?user=${username}`
+      );
+      if (!response.ok) {
         throw new Error(`Failed to fetch data for user: ${username}`);
       }
       const data: ContestData[] = await response.json();
       setUserDatas((prevData) => ({ ...prevData, [username]: data }));
-    } catch (error) {
+    } catch (error: any) {
       setError(error.message);
     } finally {
       setIsLoading(false); // ローディング終了
@@ -199,7 +162,7 @@ export default function FetchUserData() {
 
   const handleFetchData = () => {
     usernames.forEach((username) => {
-      if(username) {
+      if (username) {
         fetchUserData(username);
       }
     });
@@ -212,18 +175,37 @@ export default function FetchUserData() {
 
   // 最高レーティングを取得
   const calculateMaxRating = (data: ContestData[]) => {
+    if (data.length === 0) {
+      return 'データがありません';
+    }
     return Math.max(...data.map((item) => item.NewRating));
   };
 
   // 最新のレーティングを取得
   const calculateLatestRating = (data: ContestData[]) => {
+    if (data.length === 0) {
+      return 'データがありません';
+    }
     return data[data.length - 1].NewRating;
   };
-  
+
   // 直近のレーティング変化
   const calculateLatestRatingChange = (data: ContestData[]) => {
+    if (data.length < 2) {
+      return 'データが不足しています';
+    }
     return data[data.length - 1].NewRating - data[data.length - 2].NewRating;
   };
+
+  // 無効なユーザー名を取得
+  const invalidUsernames = Object.entries(userDatas)
+    .filter(([username, data]) => data.length === 0)
+    .map(([username]) => `"${username}"`);
+
+  // 有効なユーザーデータのみを使用
+  const validUserDatas = Object.entries(userDatas).filter(
+    ([username, data]) => data.length > 0
+  );
 
   return (
     <div>
@@ -243,24 +225,16 @@ export default function FetchUserData() {
       </button>
       {isLoading && <p>データを取得中...</p>}
       {error && <p>Error: {error}</p>}
+      {/* 無効なユーザー名がある場合に表示 */}
+      {invalidUsernames.length > 0 && (
+        <p>ユーザー名が誤っています: {invalidUsernames.join(', ')}</p>
+      )}
       {/* グラフを表示 */}
-      {Object.keys(userDatas).length > 0 && (
+      {validUserDatas.length > 0 && (
         <div>
           <h2>New Rating over Time</h2>
           <Line
-            data={RatingChartData}
-            options={{
-              scales: {
-                y: {
-                  beginAtZero: true,
-                },
-              },
-              spanGaps: true, // データがない部分を線でつなげないようにする
-            }}
-          />
-          <h2>Performance over Time</h2>
-          <Line
-            data={PerformanceChartData}
+            data={chartData}
             options={{
               scales: {
                 y: {
@@ -273,17 +247,17 @@ export default function FetchUserData() {
         </div>
       )}
       {/* AtCoder Problemsのデータを表示 */}
-      <div style={{ display: 'flex', flexWrap: 'wrap'}}>
-      {Object.entries(userDatas).map(([username, data]) => (
-        <div key={username} style={{ margin: '1rem'}}>
-          <h3> {username}のコンテストデータ</h3>
-          <p> 参加コンテスト数(Rated, UnRated):{calculateContestCount(data)}</p>
-          <p> 最高レーティング: {calculateMaxRating(data)}</p>
-          <p> 最新のレーティング:{calculateLatestRating(data)}</p>
-          <p> 直近のレーティング変化:{calculateLatestRatingChange(data)}</p>
-          <br />
-        </div>  
-      ))}
+      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+        {validUserDatas.map(([username, data]) => (
+          <div key={username} style={{ margin: '1rem' }}>
+            <h3>{username}のコンテストデータ</h3>
+            <p>参加コンテスト数 (Rated, UnRated): {calculateContestCount(data)}</p>
+            <p>最高レーティング: {calculateMaxRating(data)}</p>
+            <p>最新のレーティング: {calculateLatestRating(data)}</p>
+            <p>直近のレーティング変化: {calculateLatestRatingChange(data)}</p>
+            <br />
+          </div>
+        ))}
       </div>
     </div>
   );
