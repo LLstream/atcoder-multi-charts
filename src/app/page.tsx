@@ -1,6 +1,8 @@
 'use client'; // フロントエンド用のコンポーネントを指定
 import { Line } from 'react-chartjs-2';
 import 'chart.js/auto';
+import React from 'react';
+import './style.css';
 
 import { useState, useEffect } from 'react';
 
@@ -209,6 +211,14 @@ export default function FetchUserData() {
     ([username, data]) => data.length > 0
   );
 
+  // 表の色を変更する
+  // color = [red yellow green waterblue blue purple]
+  const Colors = ['#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff'];
+
+  const GetColors = (number: number) => {
+    return Colors[number % Colors.length];
+  }
+
   return (
     <div>
       <h3>ユーザー名を入力してください：</h3>
@@ -250,7 +260,7 @@ export default function FetchUserData() {
       )}
       {/* グラフを表示 */}
       {validUserDatas.length > 0 && (
-        <div>
+        <div className='graph'>
           <h2>New Rating over Time</h2>
           <Line
             data={chartData}
@@ -266,9 +276,9 @@ export default function FetchUserData() {
         </div>
       )}
       {/* AtCoder Problemsのデータを表示 */}
-      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-        {validUserDatas.map(([username, data]) => (
-          <div key={username} style={{ margin: '1rem' }}>
+      <div>
+        {validUserDatas.map(([username, data], index) => (
+          <div key={username} className='chart' style={ {border: `2px solid ${GetColors(index)}` }} >
             <h3>{username}のコンテストデータ</h3>
             <p>参加コンテスト数 (Rated, UnRated): {calculateContestCount(data)}</p>
             <p>最高レーティング: {calculateMaxRating(data)}</p>
