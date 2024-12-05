@@ -1,0 +1,16 @@
+.graph {
+    width: 80%;
+    height: 80%;    
+    max-width: 800px;
+}
+
+
+.chart {
+    height: 80%;
+    width: 80%;
+    max-width: 320px;
+    margin: 10px;
+    padding: 5px;
+    border-radius: 15px;
+    display: inline-block;
+}
