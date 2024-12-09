@@ -2,7 +2,7 @@
 import { Line } from 'react-chartjs-2';
 import 'chart.js/auto';
 import React from 'react';
-import './style.css';
+import styles from './page.module.css';
 
 import { useState, useEffect } from 'react';
 
@@ -260,7 +260,7 @@ export default function FetchUserData() {
       )}
       {/* グラフを表示 */}
       {validUserDatas.length > 0 && (
-        <div className='graph'>
+        <div className={styles.graph}>
           <h2>New Rating over Time</h2>
           <Line
             data={chartData}
@@ -278,7 +278,7 @@ export default function FetchUserData() {
       {/* AtCoder Problemsのデータを表示 */}
       <div>
         {validUserDatas.map(([username, data], index) => (
-          <div key={username} className='chart' style={ {border: `2px solid ${GetColors(index)}` }} >
+          <div key={username} className={styles.chart} style={ {border: `2px solid ${GetColors(index)}` }} >
             <h3>{username}のコンテストデータ</h3>
             <p>参加コンテスト数 (Rated, UnRated): {calculateContestCount(data)}</p>
             <p>最高レーティング: {calculateMaxRating(data)}</p>
