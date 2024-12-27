@@ -149,6 +149,7 @@ export default function FetchUserData() {
     setIsLoading(true); // ローディング開始
     setError(null); // エラーをクリア
     try {
+      await new Promise((resolve) => setTimeout(resolve, 40)); // 40msの遅延を追加
       const response = await fetch(
         `https://kenkoooo.com/atcoder/atcoder-api/results?user=${username}`
       );
