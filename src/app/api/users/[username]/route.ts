@@ -6,6 +6,8 @@ export async function GET(request: Request, { params }: { params: { username: st
   const apiUrl = `https://atcoder.jp/users/${username}/history/json`; // ユーザー名を含む外部APIのエンドポイント
 
   try {
+    // 遅延を追加
+    await new Promise(resolve => setTimeout(resolve, 40));
     // 外部APIにリクエストを送信
     const response = await fetch(apiUrl, {
       method: 'GET',
